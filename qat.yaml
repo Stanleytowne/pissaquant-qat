@@ -23,10 +23,11 @@ tokenizer:
 
 # Dataset
 dataset:
-  _component_: torchtune.datasets.text_completion_dataset
-  source: /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens
-  column: text
-  split: train
+  # _component_: torchtune.datasets.text_completion_dataset
+  # source: /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens
+  # column: text
+  # split: train
+  _component_: torchtune.datasets.alpaca_dataset
   packed: False  # True increases speed
 seed: null
 shuffle: True
