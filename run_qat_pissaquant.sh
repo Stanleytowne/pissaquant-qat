@@ -1,0 +1,1 @@
+tune run --nproc_per_node 4 qat_distributed --config qat-pissaquant.yaml

@@ -1,0 +1,1 @@
+tune run eleuther_eval --config eval-qat.yaml

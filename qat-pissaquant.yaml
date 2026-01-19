@@ -13,7 +13,7 @@
 # you can run:
 #   tune run --nproc_per_node 4 qat_distributed --config llama3/8B_qat_full checkpointer.checkpoint_dir=<YOUR_CHECKPOINT_DIR>
 
-output_dir: /ceph/home/muhan01/tpz/pissaquant/torchtune/llama3_8B/qat-pissaquant # /tmp may be deleted by your system. Change it to your preference.
+output_dir: /ceph/home/muhan01/tpz/pissaquant-qat/outputs/qat-pissaquant
 
 # Tokenizer
 tokenizer:
@@ -23,11 +23,16 @@ tokenizer:
 
 # Dataset
 dataset:
-  # _component_: torchtune.datasets.text_completion_dataset
-  # source: /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens
-  # column: text
-  # split: train
-  _component_: torchtune.datasets.alpaca_dataset
+  _component_: torchtune.datasets.text_completion_dataset
+  source: parquet
+  data_files:
+    - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00000-of-00050.parquet
+    - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00001-of-00050.parquet
+    - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00002-of-00050.parquet
+    - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00003-of-00050.parquet
+  column: text
+  split: train
+  #_component_: torchtune.datasets.alpaca_dataset
   packed: False  # True increases speed
 seed: null
 shuffle: True
@@ -54,11 +59,13 @@ epochs: 1
 # QAT arguments
 quantizer:
   _component_: torchtune.training.quantization.PissaQuantInt4WeightQATQuantizer
-  rank: 16
-  block_size: 128
-  eps: 1e-8
-  padding_allowed: false
-  svd_niter: 2
+  block_size: 256
+  svd_niter: 64
+  use_checkpoint: true
+  pissaquant_ab_init_path: outputs/pissaquant_ab_init.pth
+fake_quant_after_n_steps: 1000
+pissaquant_ab_refine_steps: 500
+pissaquant_ab_device: cuda
 
 optimizer:
   _component_: torch.optim.AdamW
@@ -71,9 +78,6 @@ gradient_accumulation_steps: 1  # Use to increase effective batch size
 clip_grad_norm: null
 compile: False  # torch.compile the model + loss, True increases speed + decreases memory
 optimizer_in_bwd: False  # True saves memory. Requires gradient_accumulation_steps=1
-# NOTE: if this equals total steps, fake-quant never gets enabled (enable happens at the start of a step).
-# A common heuristic is ~= total_steps // 2.
-fake_quant_after_n_steps: 1000
 
 # Training env
 device: cuda
@@ -90,9 +94,7 @@ dtype: bf16
 metric_logger:
   _component_: torchtune.training.metric_logging.WandBLogger
   project: pissaquant
-  # entity: <YOUR_WANDB_ENTITY>   # optional
-  # group: llama3_8b_qat_full     # optional
-  name: llama3_8b_qat_full
+  name: llama3_8b_qat_pissaquant
   log_dir: ${output_dir}/logs
 log_every_n_steps: 1
 log_peak_memory_stats: True
