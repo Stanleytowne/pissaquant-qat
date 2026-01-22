@@ -1,0 +1,44 @@
+# Config for EleutherEvalRecipe in eleuther_eval.py
+#
+# To launch, run the following command from root torchtune directory:
+#    tune run eleuther_eval --config eleuther_evaluation tasks=["truthfulqa_mc2","hellaswag"]
+
+output_dir: ./ # Not needed
+
+# Model Arguments
+model:
+  _component_: torchtune.models.qwen3.qwen3_8b_base
+
+checkpointer:
+  _component_: torchtune.training.FullModelHFCheckpointer
+  checkpoint_dir: /ceph/home/muhan01/huggingfacemodels/Qwen3-8B
+  checkpoint_files: [
+    model-00001-of-00005.safetensors,
+    model-00002-of-00005.safetensors,
+    model-00003-of-00005.safetensors,
+    model-00004-of-00005.safetensors,
+    model-00005-of-00005.safetensors,
+  ]
+  recipe_checkpoint: null
+  output_dir: outputs/qwen/128/pissaquant
+  model_type: QWEN3
+
+# Tokenizer
+tokenizer:
+  _component_: torchtune.models.qwen3.qwen3_tokenizer
+  path: /ceph/home/muhan01/huggingfacemodels/Qwen3-8B/vocab.json
+  merges_file: /ceph/home/muhan01/huggingfacemodels/Qwen3-8B/merges.txt
+  max_seq_len: null
+
+# Environment
+device: cuda
+dtype: bf16
+seed: 1234 # It is not recommended to change this seed, b/c it matches EleutherAI's default seed
+
+# Quantization specific args
+quantizer:
+  _component_: torchtune.training.quantization.PissaQuantInt4WeightQATQuantizer
+  block_size: 128
+  svd_niter: 64
+  use_checkpoint: true
+  pissaquant_ab_init_path: outputs/qwen/128/pissaquant_ab_init.pth

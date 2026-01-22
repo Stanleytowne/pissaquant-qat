@@ -13,14 +13,14 @@
 # you can run:
 #   tune run --nproc_per_node 4 qat_distributed --config llama3/8B_qat_full checkpointer.checkpoint_dir=<YOUR_CHECKPOINT_DIR>
 
-output_dir: /ceph/home/muhan01/tpz/pissaquant-qat/outputs/qat
-
+output_dir: outputs/qwen/256/pissaquant
 
 # Tokenizer
 tokenizer:
-  _component_: torchtune.models.llama3.llama3_tokenizer
-  path: /ceph/home/muhan01/huggingfacemodels/Meta-Llama-3-8B/original/tokenizer.model
-  max_seq_len: 8192
+  _component_: torchtune.models.qwen3.qwen3_tokenizer
+  path: /ceph/home/muhan01/huggingfacemodels/Qwen3-8B/vocab.json
+  merges_file: /ceph/home/muhan01/huggingfacemodels/Qwen3-8B/merges.txt
+  max_seq_len: null
 
 # Dataset
 dataset:
@@ -29,23 +29,32 @@ dataset:
   data_files:
     - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00000-of-00050.parquet
     - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00001-of-00050.parquet
+    - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00002-of-00050.parquet
+    - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00003-of-00050.parquet
+  column: text
+  split: train
+  #_component_: torchtune.datasets.alpaca_dataset
   packed: False  # True increases speed
-seed: null
+seed: 42
 shuffle: True
 
 # Model Arguments
 model:
-  _component_: torchtune.models.llama3.llama3_8b
+  _component_: torchtune.models.qwen3.qwen3_8b_base
 
 checkpointer:
-  _component_: torchtune.training.FullModelMetaCheckpointer
-  checkpoint_dir: /ceph/home/muhan01/huggingfacemodels/Meta-Llama-3-8B/original/
+  _component_: torchtune.training.FullModelHFCheckpointer
+  checkpoint_dir: /ceph/home/muhan01/huggingfacemodels/Qwen3-8B
   checkpoint_files: [
-    consolidated.00.pth
+    model-00001-of-00005.safetensors,
+    model-00002-of-00005.safetensors,
+    model-00003-of-00005.safetensors,
+    model-00004-of-00005.safetensors,
+    model-00005-of-00005.safetensors,
   ]
   recipe_checkpoint: null
-  output_dir: ${output_dir}
-  model_type: LLAMA3
+  output_dir: outputs/qwen/256/pissaquant
+  model_type: QWEN3
 resume_from_checkpoint: False
 
 # Fine-tuning arguments
@@ -54,8 +63,18 @@ epochs: 1
 
 # QAT arguments
 quantizer:
-  _component_: torchtune.training.quantization.Int4WeightOnlyQATQuantizer
-  groupsize: 256
+  _component_: torchtune.training.quantization.PissaQuantInt4WeightQATQuantizer
+  block_size: 128
+  svd_niter: 64
+  use_checkpoint: true
+  pissaquant_ab_init_path: outputs/qwen/128/pissaquant_ab_init.pth
+fake_quant_after_n_steps: null
+train_w_after_n_steps: 250
+qparam_lr_rate: 4
+lr_warmup_steps: 375
+pissaquant_ab_refine_steps: 500
+pissaquant_ab_refine_lr: 1e-3
+pissaquant_ab_device: cuda
 
 optimizer:
   _component_: torch.optim.AdamW
@@ -63,12 +82,11 @@ optimizer:
   fused: True
 loss:
   _component_: torchtune.modules.loss.CEWithChunkedOutputLoss
-max_steps_per_epoch: 10
-gradient_accumulation_steps: 1  # Use to increase effective batch size
+max_steps_per_epoch: 1250
+gradient_accumulation_steps: 8  # Use to increase effective batch size
 clip_grad_norm: null
 compile: False  # torch.compile the model + loss, True increases speed + decreases memory
 optimizer_in_bwd: False  # True saves memory. Requires gradient_accumulation_steps=1
-fake_quant_after_n_steps: null
 
 # Training env
 device: cuda
@@ -85,9 +103,7 @@ dtype: bf16
 metric_logger:
   _component_: torchtune.training.metric_logging.WandBLogger
   project: pissaquant
-  # entity: <YOUR_WANDB_ENTITY>   # optional
-  # group: llama3_8b_qat_full     # optional
-  name: llama3_8b_qat_full
+  name: qwen3_8b_qat_pissaquant
   log_dir: ${output_dir}/logs
 log_every_n_steps: 1
 log_peak_memory_stats: True

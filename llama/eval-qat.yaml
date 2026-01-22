@@ -10,19 +10,19 @@ model:
   _component_: torchtune.models.llama3.llama3_8b
 
 checkpointer:
-  _component_: torchtune.training.FullModelHFCheckpointer
-  checkpoint_dir: outputs/qat_full/epoch_0
+  _component_: torchtune.training.FullModelTorchTuneCheckpointer
+  checkpoint_dir: outputs/256/qat-final/converted
   checkpoint_files: [
-    model-00001-of-00001.bin
+    model-00001-of-00001.pt
   ]
   recipe_checkpoint: null
-  output_dir: outputs/qat_full/epoch_0
+  output_dir: outputs # Not used
   model_type: LLAMA3
 
 # Tokenizer
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: outputs/qat_full/epoch_0/tokenizer.model
+  path: /ceph/home/muhan01/huggingfacemodels/Meta-Llama-3-8B/original/tokenizer.model
   max_seq_len: null
 
 # Environment
@@ -31,13 +31,12 @@ dtype: bf16
 seed: 1234 # It is not recommended to change this seed, b/c it matches EleutherAI's default seed
 
 # EleutherAI specific eval args
-tasks: ["hellaswag", "wikitext"]
+# tasks: ["hellaswag", "wikitext"]
+tasks: ["hellaswag", "wikitext", "arc_easy", "arc_challenge", "openbookqa", "piqa", "winogrande", "paloma_ptb", "boolq"]
+# tasks: ["wikitext"]
 limit: null
 max_seq_length: 4096
-batch_size: 8
+batch_size: 1
 enable_kv_cache: True
 
-# Quantization specific args
-quantizer:
-  _component_: torchtune.training.quantization.Int8DynActInt4WeightQuantizer
-  groupsize: 256
+quantizer: null

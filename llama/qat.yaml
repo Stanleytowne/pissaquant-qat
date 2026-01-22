@@ -13,7 +13,8 @@
 # you can run:
 #   tune run --nproc_per_node 4 qat_distributed --config llama3/8B_qat_full checkpointer.checkpoint_dir=<YOUR_CHECKPOINT_DIR>
 
-output_dir: /ceph/home/muhan01/tpz/pissaquant-qat/outputs/qat-pissaquant
+output_dir: outputs/256/qat-final
+
 
 # Tokenizer
 tokenizer:
@@ -30,11 +31,8 @@ dataset:
     - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00001-of-00050.parquet
     - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00002-of-00050.parquet
     - /ceph/home/muhan01/huggingfacedatasets/transmla_pretrain_6B_tokens/data/train-00003-of-00050.parquet
-  column: text
-  split: train
-  #_component_: torchtune.datasets.alpaca_dataset
   packed: False  # True increases speed
-seed: null
+seed: 42
 shuffle: True
 
 # Model Arguments
@@ -58,14 +56,8 @@ epochs: 1
 
 # QAT arguments
 quantizer:
-  _component_: torchtune.training.quantization.PissaQuantInt4WeightQATQuantizer
-  block_size: 256
-  svd_niter: 64
-  use_checkpoint: true
-  pissaquant_ab_init_path: outputs/pissaquant_ab_init.pth
-fake_quant_after_n_steps: 1000
-pissaquant_ab_refine_steps: 500
-pissaquant_ab_device: cuda
+  _component_: torchtune.training.quantization.Int4WeightOnlyQATQuantizer
+  groupsize: 256
 
 optimizer:
   _component_: torch.optim.AdamW
@@ -73,11 +65,14 @@ optimizer:
   fused: True
 loss:
   _component_: torchtune.modules.loss.CEWithChunkedOutputLoss
-max_steps_per_epoch: 5000
-gradient_accumulation_steps: 1  # Use to increase effective batch size
+max_steps_per_epoch: 1250
+gradient_accumulation_steps: 4  # Use to increase effective batch size
 clip_grad_norm: null
 compile: False  # torch.compile the model + loss, True increases speed + decreases memory
 optimizer_in_bwd: False  # True saves memory. Requires gradient_accumulation_steps=1
+fake_quant_after_n_steps: 250
+lr_warmup_steps: 375
+
 
 # Training env
 device: cuda
@@ -94,7 +89,7 @@ dtype: bf16
 metric_logger:
   _component_: torchtune.training.metric_logging.WandBLogger
   project: pissaquant
-  name: llama3_8b_qat_pissaquant
+  name: llama3_8b_qat
   log_dir: ${output_dir}/logs
 log_every_n_steps: 1
 log_peak_memory_stats: True

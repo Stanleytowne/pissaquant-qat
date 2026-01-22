@@ -1,0 +1,39 @@
+# Config for EleutherEvalRecipe in eleuther_eval.py
+#
+# To launch, run the following command from root torchtune directory:
+#    tune run eleuther_eval --config eleuther_evaluation tasks=["truthfulqa_mc2","hellaswag"]
+
+output_dir: ./ # Not needed
+
+# Model Arguments
+model:
+  _component_: torchtune.models.llama3.llama3_8b
+
+checkpointer:
+  _component_: torchtune.training.FullModelMetaCheckpointer
+  checkpoint_dir: /ceph/home/muhan01/huggingfacemodels/Meta-Llama-3-8B/original
+  checkpoint_files: [
+    consolidated.00.pth
+  ]
+  recipe_checkpoint: null
+  output_dir: outputs/128/llama3-8b-pissaquant-no-refine
+  model_type: LLAMA3
+
+# Tokenizer
+tokenizer:
+  _component_: torchtune.models.llama3.llama3_tokenizer
+  path: /ceph/home/muhan01/huggingfacemodels/Meta-Llama-3-8B/original/tokenizer.model
+  max_seq_len: null
+
+# Environment
+device: cuda
+dtype: bf16
+seed: 1234 # It is not recommended to change this seed, b/c it matches EleutherAI's default seed
+
+# Quantization specific args
+quantizer:
+  _component_: torchtune.training.quantization.PissaQuantInt4WeightQATQuantizer
+  block_size: 128
+  svd_niter: 64
+  use_checkpoint: true
+  pissaquant_ab_init_path: outputs/128/pissaquant_ab_init_no_refine.pth

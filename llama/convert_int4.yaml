@@ -10,19 +10,19 @@ model:
   _component_: torchtune.models.llama3.llama3_8b
 
 checkpointer:
-  _component_: torchtune.training.FullModelTorchTuneCheckpointer
-  checkpoint_dir: outputs/qat_full/epoch_0
+  _component_: torchtune.training.FullModelMetaCheckpointer
+  checkpoint_dir: /ceph/home/muhan01/huggingfacemodels/Meta-Llama-3-8B/original
   checkpoint_files: [
-    model-00001-of-00001.bin
+    consolidated.00.pth
   ]
   recipe_checkpoint: null
-  output_dir: outputs/qat_full/converted
+  output_dir: outputs/128/llama3-8b-int4
   model_type: LLAMA3
 
 # Tokenizer
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: outputs/qat_full/epoch_0/tokenizer.model
+  path: /ceph/home/muhan01/huggingfacemodels/Meta-Llama-3-8B/original/tokenizer.model
   max_seq_len: null
 
 # Environment
@@ -33,4 +33,4 @@ seed: 1234 # It is not recommended to change this seed, b/c it matches EleutherA
 # Quantization specific args
 quantizer:
   _component_: torchtune.training.quantization.Int4WeightOnlyQATQuantizer
-  groupsize: 256
+  groupsize: 128
