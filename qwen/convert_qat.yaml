@@ -11,7 +11,7 @@ model:
 
 checkpointer:
   _component_: torchtune.training.FullModelHFCheckpointer
-  checkpoint_dir: outputs/qwen/256/qat/converted
+  checkpoint_dir: outputs/qwen/256/qat/epoch_0
   checkpoint_files: [
     model-00001-of-00005.safetensors,
     model-00002-of-00005.safetensors,
@@ -20,7 +20,7 @@ checkpointer:
     model-00005-of-00005.safetensors,
   ]
   recipe_checkpoint: null
-  output_dir: outputs # Not used
+  output_dir: outputs/qwen/256/qat/converted
   model_type: QWEN3
 
 # Tokenizer
@@ -35,13 +35,7 @@ device: cuda
 dtype: bf16
 seed: 1234 # It is not recommended to change this seed, b/c it matches EleutherAI's default seed
 
-# EleutherAI specific eval args
-# tasks: ["hellaswag", "wikitext"]
-tasks: ["hellaswag", "wikitext", "arc_easy", "arc_challenge", "openbookqa", "piqa", "winogrande", "paloma_ptb", "boolq"]
-# tasks: ["wikitext"]
-limit: null
-max_seq_length: 4096
-batch_size: 1
-enable_kv_cache: True
-
-quantizer: null
+# Quantization specific args
+quantizer:
+  _component_: torchtune.training.quantization.Int4WeightOnlyQATQuantizer
+  groupsize: 256

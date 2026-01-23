@@ -10,14 +10,10 @@ model:
   _component_: torchtune.models.qwen3.qwen3_8b_base
 
 checkpointer:
-  _component_: torchtune.training.FullModelHFCheckpointer
-  checkpoint_dir: outputs/qwen/256/qat/converted
+  _component_: torchtune.training.FullModelTorchTuneCheckpointer
+  checkpoint_dir: outputs/qwen/256/llama3-8b-pissaquant1000
   checkpoint_files: [
-    model-00001-of-00005.safetensors,
-    model-00002-of-00005.safetensors,
-    model-00003-of-00005.safetensors,
-    model-00004-of-00005.safetensors,
-    model-00005-of-00005.safetensors,
+    model-00001-of-00001.pt
   ]
   recipe_checkpoint: null
   output_dir: outputs # Not used
